@@ -8,7 +8,7 @@ from app.core.guardrail import is_out_of_scope, refusal_reply
 from app.core.validator import filter_valid_recommendations
 from app.models.schemas import ChatRequest, ChatResponse, Recommendation
 from app.services.retrieval_service import retrieve_assessments
-
+from app.services.comparison_service import compare_assessments
 
 def handle_chat(request: ChatRequest) -> ChatResponse:
     full_context = get_user_context(request.messages)
@@ -37,7 +37,7 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
 
     if is_comparison(last_message):
         return ChatResponse(
-            reply="I can compare assessments using the SHL catalog. Please mention the exact assessment names you want to compare.",
+            reply=compare_assessments(last_message),
             recommendations=[],
             end_of_conversation=False,
         )
