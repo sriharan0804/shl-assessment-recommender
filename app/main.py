@@ -1,10 +1,11 @@
 from fastapi import FastAPI
 from app.api.routes import router
+from app.config import settings
 
 app = FastAPI(
 
-    title ="SHL Assessment Recommender",
-    version = '1.0.0',
+    title =settings.app_name,
+    version = settings.app_version,
 
 )
 app.include_router(router)

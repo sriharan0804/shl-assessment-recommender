@@ -1,4 +1,4 @@
-from app.models.schema import ChatRequest , ChatResponse
+from app.models.schemas import ChatRequest , ChatResponse
 
 def handle_chat(request : ChatRequest)-> ChatResponse:
     if not request.messages:
