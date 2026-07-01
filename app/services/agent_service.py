@@ -1,26 +1,43 @@
-from app.core.validator import filter_valid_recommendations
+from app.core.conversation_state import (
+    get_last_user_message,
+    get_user_context,
+    is_comparison,
+    is_vague_query,
+)
+from app.core.guardrails import is_out_of_scope, refusal_reply
+from app.core.validators import filter_valid_recommendations
 from app.models.schemas import ChatRequest, ChatResponse, Recommendation
 from app.services.retrieval_service import retrieve_assessments
 
 
 def handle_chat(request: ChatRequest) -> ChatResponse:
-    user_messages = [
-        message.content for message in request.messages if message.role == "user"
-    ]
+    full_context = get_user_context(request.messages)
+    last_message = get_last_user_message(request.messages)
 
-    if not user_messages:
+    if not last_message:
         return ChatResponse(
             reply="Please tell me what role you are hiring for.",
             recommendations=[],
             end_of_conversation=False,
         )
 
-    full_context = " ".join(user_messages)
-    last_message = user_messages[-1]
+    if is_out_of_scope(last_message):
+        return ChatResponse(
+            reply=refusal_reply(),
+            recommendations=[],
+            end_of_conversation=False,
+        )
 
-    if is_vague(last_message):
+    if is_vague_query(last_message):
         return ChatResponse(
             reply="Sure. What role are you hiring for, and what skills should the assessment cover?",
+            recommendations=[],
+            end_of_conversation=False,
+        )
+
+    if is_comparison(last_message):
+        return ChatResponse(
+            reply="I can compare assessments using the SHL catalog. Please mention the exact assessment names you want to compare.",
             recommendations=[],
             end_of_conversation=False,
         )
@@ -44,25 +61,13 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
         for item in valid_items[:10]
     ]
 
+    reply = (
+        f"Based on the role details, here are {len(recommendations)} "
+        "SHL assessments that best match the context."
+    )
+
     return ChatResponse(
-        reply=f"Based on your role requirements, here are {len(recommendations)} SHL assessments that best match the context.",
+        reply=reply,
         recommendations=recommendations,
         end_of_conversation=False,
     )
-
-
-def is_vague(text: str) -> bool:
-    text = text.lower().strip()
-    words = text.split()
-
-    vague_phrases = {
-        "assessment",
-        "i need assessment",
-        "i need an assessment",
-        "need assessment",
-        "need test",
-        "i need test",
-        "recommend assessment",
-    }
-
-    return text in vague_phrases or len(words) <= 3
