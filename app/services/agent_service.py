@@ -10,6 +10,8 @@ from app.core.validator import filter_valid_recommendations
 from app.models.schemas import ChatRequest, ChatResponse, Recommendation
 from app.services.retrieval_service import retrieve_assessments
 from app.services.comparison_service import compare_assessments
+from app.core.prompts import RECOMMENDATION_REPLY_PROMPT
+from app.services.llm_service import generate_reply
 
 def handle_chat(request: ChatRequest) -> ChatResponse:
     full_context = get_user_context(request.messages)
@@ -67,16 +69,30 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
         for item in valid_items[:10]
     ]
 
+    assessment_text = "\n".join(
+    f"- {item['name']} ({item['test_type']}): {item.get('description', '')}"
+    for item in valid_items[:5]
+    )
+
+    prompt = RECOMMENDATION_REPLY_PROMPT.format(
+        context=full_context,
+        assessments=assessment_text,
+    )
+
+    llm_reply = generate_reply(prompt)
+
     if refinement_text:
-        reply = (
+        fallback_reply = (
             f"Got it. I updated the shortlist based on your added constraint. "
             f"Here are {len(recommendations)} SHL assessments that now best match the conversation."
         )
     else:
-        reply = (
+        fallback_reply = (
             f"Based on the role details, here are {len(recommendations)} "
             "SHL assessments that best match the context."
         )
+
+    reply = llm_reply or fallback_reply
 
     return ChatResponse(
         reply=reply,
