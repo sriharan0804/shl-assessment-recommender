@@ -40,11 +40,14 @@ def load_vector_metadata() -> list[dict[str, Any]]:
         return json.load(file)
 
 
-def retrieve_assessments(query: str, limit: int = 10) -> list[dict[str, Any]]:
+def retrieve_assessments(query: str, limit: int = 10, refinement_text: str = "") -> list[dict[str, Any]]:
     semantic_results = semantic_search(query, limit=limit)
     keyword_results = keyword_search(query, limit=limit)
 
     merged = merge_results(semantic_results, keyword_results)
+
+    if refinement_text:
+        merged = apply_refinement_boost(merged, refinement_text)
 
     return merged[:limit]
 
@@ -110,3 +113,32 @@ def merge_results(
             merged.append(item)
 
     return merged
+
+def apply_refinement_boost(
+    items: list[dict],
+    refinement_text: str,
+) -> list[dict]:
+    text = refinement_text.lower()
+
+    def score(item: dict) -> int:
+        item_text = item.get("search_text", "").lower()
+        item_keys = " ".join(item.get("keys", [])).lower()
+
+        boost = 0
+
+        if "personality" in text and (
+            "personality" in item_text or "personality" in item_keys or item.get("test_type") == "P"
+        ):
+            boost += 10
+
+        if "cognitive" in text or "ability" in text:
+            if "ability" in item_text or "aptitude" in item_text or item.get("test_type") == "A":
+                boost += 10
+
+        if "communication" in text or "stakeholder" in text:
+            if "communication" in item_text or "competencies" in item_keys:
+                boost += 7
+
+        return boost
+
+    return sorted(items, key=score, reverse=True)

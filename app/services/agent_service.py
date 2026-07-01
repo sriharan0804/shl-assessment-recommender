@@ -2,6 +2,7 @@ from app.core.conversation_state import (
     get_last_user_message,
     get_user_context,
     is_comparison,
+    is_refinement,
     is_vague_query,
 )
 from app.core.guardrail import is_out_of_scope, refusal_reply
@@ -42,7 +43,12 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
             end_of_conversation=False,
         )
 
-    retrieved = retrieve_assessments(full_context, limit=10)
+    refinement_text = last_message if is_refinement(last_message) else ""
+    retrieved = retrieve_assessments(
+        full_context,
+        limit=10,
+        refinement_text=refinement_text,
+    )
     valid_items = filter_valid_recommendations(retrieved)
 
     if not valid_items:
@@ -61,10 +67,16 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
         for item in valid_items[:10]
     ]
 
-    reply = (
-        f"Based on the role details, here are {len(recommendations)} "
-        "SHL assessments that best match the context."
-    )
+    if refinement_text:
+        reply = (
+            f"Got it. I updated the shortlist based on your added constraint. "
+            f"Here are {len(recommendations)} SHL assessments that now best match the conversation."
+        )
+    else:
+        reply = (
+            f"Based on the role details, here are {len(recommendations)} "
+            "SHL assessments that best match the context."
+        )
 
     return ChatResponse(
         reply=reply,

@@ -63,3 +63,23 @@ def is_comparison(text: str) -> bool:
     ]
 
     return any(word in text for word in comparison_words)
+
+def is_refinement(text: str) -> bool:
+    text = text.lower()
+
+    refinement_words = [
+        "actually",
+        "also",
+        "add",
+        "include",
+        "remove",
+        "instead",
+        "change",
+        "update",
+        "personality",
+        "cognitive",
+        "ability",
+        "communication",
+    ]
+
+    return any(word in text for word in refinement_words)
