@@ -4,8 +4,8 @@ from app.core.conversation_state import (
     is_comparison,
     is_vague_query,
 )
-from app.core.guardrails import is_out_of_scope, refusal_reply
-from app.core.validators import filter_valid_recommendations
+from app.core.guardrail import is_out_of_scope, refusal_reply
+from app.core.validator import filter_valid_recommendations
 from app.models.schemas import ChatRequest, ChatResponse, Recommendation
 from app.services.retrieval_service import retrieve_assessments
 
