@@ -1,0 +1,44 @@
+[
+  {
+    "name": "vague_query",
+    "messages": [
+      {"role": "user", "content": "I need an assessment"}
+    ],
+    "expected": {
+      "recommendations_empty": true,
+      "reply_contains_any": ["role", "skills", "hiring"]
+    }
+  },
+  {
+    "name": "java_developer",
+    "messages": [
+      {"role": "user", "content": "Hiring a mid-level Java developer with backend and SQL skills"}
+    ],
+    "expected": {
+      "recommendations_empty": false,
+      "max_recommendations": 10
+    }
+  },
+  {
+    "name": "off_topic",
+    "messages": [
+      {"role": "user", "content": "Give me interview questions for Java developer"}
+    ],
+    "expected": {
+      "recommendations_empty": true,
+      "reply_contains_any": ["SHL", "assessment"]
+    }
+  },
+  {
+    "name": "refinement",
+    "messages": [
+      {"role": "user", "content": "Hiring a mid-level Java developer with backend skills"},
+      {"role": "assistant", "content": "Here are some matching SHL assessments."},
+      {"role": "user", "content": "Actually add personality tests also"}
+    ],
+    "expected": {
+      "recommendations_empty": false,
+      "reply_contains_any": ["updated", "constraint", "shortlist"]
+    }
+  }
+]
