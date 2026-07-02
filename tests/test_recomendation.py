@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from app.services.catalog_service import get_catalog_urls
 
 from app.main import app
 
@@ -88,3 +89,26 @@ def test_job_level_preference_recommendations():
     assert response.status_code == 200
     assert len(data["recommendations"]) > 0
     assert data["end_of_conversation"] is True
+
+def test_api_recommendations_use_only_catalog_urls():
+    valid_urls = get_catalog_urls()
+
+    response = client.post(
+        "/chat",
+        json={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hiring a mid-level Python developer with SQL and problem solving skills",
+                }
+            ]
+        },
+    )
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data["recommendations"]) > 0
+
+    for item in data["recommendations"]:
+        assert item["url"] in valid_urls
