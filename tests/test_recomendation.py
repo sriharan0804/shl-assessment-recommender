@@ -30,3 +30,23 @@ def test_java_developer_recommendations():
         assert item["name"]
         assert item["url"].startswith("https://www.shl.com/")
         assert item["test_type"]
+
+def test_remote_short_assessment_recommendations():
+    response = client.post(
+        "/chat",
+        json={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hiring a graduate software engineer, need remote quick assessment for coding and reasoning",
+                }
+            ]
+        },
+    )
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data["recommendations"]) > 0
+    assert len(data["recommendations"]) <= 10
+    assert data["end_of_conversation"] is True

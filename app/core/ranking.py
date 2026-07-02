@@ -40,6 +40,22 @@ def rank_assessments(items: list[dict], query: str) -> list[dict]:
             if test_type == "P":
                 s += 6
 
+        # remote preference
+        if "remote" in query:
+            if item.get("remote", "").lower() == "yes":
+                s += 4
+
+        # adaptive preference
+        if "adaptive" in query:
+            if item.get("adaptive", "").lower() == "yes":
+                s += 4
+
+        # duration preference
+        if "short" in query or "quick" in query or "under 30" in query:
+            duration = item.get("duration", "").lower()
+            if any(minute in duration for minute in ["10", "15", "20", "25", "30"]):
+                s += 4
+
         return s
 
     return sorted(items, key=score, reverse=True)
