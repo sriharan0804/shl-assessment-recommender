@@ -101,5 +101,5 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
     return ChatResponse(
         reply=reply,
         recommendations=recommendations,
-        end_of_conversation=False,
+        end_of_conversation=True,
     )

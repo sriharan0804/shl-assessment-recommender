@@ -1,5 +1,5 @@
 from app.services.catalog_service import get_catalog_urls, load_catalog
-
+from app.core.validator import filter_valid_recommendations
 
 def test_catalog_loaded():
     catalog = load_catalog()
@@ -23,3 +23,14 @@ def test_catalog_urls_are_unique():
 
     assert len(urls) > 0
     assert len(urls) == len(set(urls))
+
+def test_filter_valid_recommendations_removes_fake_urls():
+    items = [
+        {
+            "name": "Fake Test",
+            "url": "https://fake.com/test",
+            "test_type": "K",
+        }
+    ]
+
+    assert filter_valid_recommendations(items) == []

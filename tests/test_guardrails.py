@@ -20,3 +20,4 @@ def test_off_topic_refusal():
     assert response.status_code == 200
     assert data["recommendations"] == []
     assert "SHL assessment" in data["reply"]
+    assert data["end_of_conversation"] is False
