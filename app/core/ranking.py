@@ -71,6 +71,25 @@ def rank_assessments(items: list[dict], query: str) -> list[dict]:
             if "french" in languages:
                 s += 3
 
+                # job level preference
+        job_levels = " ".join(item.get("job_levels", [])).lower()
+
+        if any(w in query for w in ["entry", "entry-level", "fresher", "freshers"]):
+            if "entry-level" in job_levels or "graduate" in job_levels:
+                s += 4
+
+        if "graduate" in query:
+            if "graduate" in job_levels:
+                s += 4
+
+        if any(w in query for w in ["mid", "mid-level", "mid professional", "mid-professional"]):
+            if "mid-professional" in job_levels:
+                s += 4
+
+        if any(w in query for w in ["manager", "lead", "leadership"]):
+            if "manager" in job_levels or "supervisor" in job_levels:
+                s += 4
+
         return s
 
     return sorted(items, key=score, reverse=True)

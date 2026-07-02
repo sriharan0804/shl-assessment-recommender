@@ -69,3 +69,22 @@ def test_language_preference_recommendations():
     assert response.status_code == 200
     assert len(data["recommendations"]) > 0
     assert data["end_of_conversation"] is True
+
+def test_job_level_preference_recommendations():
+    response = client.post(
+        "/chat",
+        json={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hiring a graduate software engineer with Java and reasoning skills",
+                }
+            ]
+        },
+    )
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data["recommendations"]) > 0
+    assert data["end_of_conversation"] is True
