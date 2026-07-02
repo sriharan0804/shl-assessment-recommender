@@ -83,3 +83,35 @@ def is_refinement(text: str) -> bool:
     ]
 
     return any(word in text for word in refinement_words)
+
+def has_enough_context(text: str) -> bool:
+    text = text.lower()
+
+    role_words = [
+        "developer", "engineer", "manager", "analyst", "sales",
+        "support", "consultant", "graduate", "java", "python",
+        "sql", "frontend", "backend", "data"
+    ]
+
+    skill_words = [
+        "java", "python", "sql", "communication", "stakeholder",
+        "personality", "cognitive", "reasoning", "leadership",
+        "problem solving", "coding", "database"
+    ]
+
+    has_role = any(word in text for word in role_words)
+    has_skill = any(word in text for word in skill_words)
+
+    return has_role and has_skill
+
+
+def clarification_question(text: str) -> str:
+    text = text.lower()
+
+    if not any(word in text for word in ["developer", "engineer", "manager", "analyst", "sales"]):
+        return "Sure. What role are you hiring for, and what are the key skills you want to assess?"
+
+    if not any(word in text for word in ["entry", "graduate", "mid", "senior", "manager"]):
+        return "Got it. What seniority level is this role for: entry-level, graduate, mid-level, senior, or manager?"
+
+    return "Could you share the key skills or traits you want to assess, such as technical skills, reasoning ability, communication, or personality?"

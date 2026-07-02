@@ -1,6 +1,8 @@
 from app.core.conversation_state import (
+    clarification_question,
     get_last_user_message,
     get_user_context,
+    has_enough_context,
     is_comparison,
     is_refinement,
     is_vague_query,
@@ -32,16 +34,16 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
             end_of_conversation=False,
         )
 
-    if is_vague_query(last_message):
+    if is_comparison(last_message):
         return ChatResponse(
-            reply="Sure. What role are you hiring for, and what skills should the assessment cover?",
+            reply=compare_assessments(last_message),
             recommendations=[],
             end_of_conversation=False,
         )
 
-    if is_comparison(last_message):
+    if is_vague_query(last_message) or not has_enough_context(full_context):
         return ChatResponse(
-            reply=compare_assessments(last_message),
+            reply=clarification_question(full_context),
             recommendations=[],
             end_of_conversation=False,
         )
