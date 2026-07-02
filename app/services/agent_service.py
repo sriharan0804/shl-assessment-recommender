@@ -12,6 +12,7 @@ from app.services.retrieval_service import retrieve_assessments
 from app.services.comparison_service import compare_assessments
 from app.core.prompts import RECOMMENDATION_REPLY_PROMPT
 from app.services.llm_service import generate_reply
+from app.core.ranking import rank_assessments
 
 def handle_chat(request: ChatRequest) -> ChatResponse:
     full_context = get_user_context(request.messages)
@@ -52,6 +53,7 @@ def handle_chat(request: ChatRequest) -> ChatResponse:
         refinement_text=refinement_text,
     )
     valid_items = filter_valid_recommendations(retrieved)
+    valid_items = rank_assessments(valid_items, full_context)
 
     if not valid_items:
         return ChatResponse(
