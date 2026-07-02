@@ -25,3 +25,4 @@ def test_chat_schema():
     assert isinstance(data["reply"], str)
     assert isinstance(data["recommendations"], list)
     assert isinstance(data["end_of_conversation"], bool)
+    assert data["end_of_conversation"] is False
