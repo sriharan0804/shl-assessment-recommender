@@ -20,31 +20,35 @@ def get_embedding_model():
 
 
 @lru_cache(maxsize=1)
-def load_vector_index():
-    index_path = Path(settings.vector_index_path)
+def load_faiss_index():
+    path = Path(settings.vector_index_path)
 
-    if not index_path.exists():
+    if not path.exists():
         return None
 
-    return faiss.read_index(str(index_path))
+    return faiss.read_index(str(path))
 
 
 @lru_cache(maxsize=1)
-def load_vector_metadata() -> list[dict[str, Any]]:
-    metadata_path = Path(settings.vector_metadata_path)
+def load_metadata() -> list[dict[str, Any]]:
+    path = Path(settings.vector_metadata_path)
 
-    if not metadata_path.exists():
+    if not path.exists():
         return []
 
-    with metadata_path.open("r", encoding="utf-8") as file:
+    with path.open("r", encoding="utf-8") as file:
         return json.load(file)
 
 
-def retrieve_assessments(query: str, limit: int = 10, refinement_text: str = "") -> list[dict[str, Any]]:
-    semantic_results = semantic_search(query, limit=limit)
-    keyword_results = keyword_search(query, limit=limit)
+def retrieve_assessments(
+    query: str,
+    limit: int = 10,
+    refinement_text: str = "",
+) -> list[dict[str, Any]]:
+    keyword_results = keyword_search(query, limit=limit * 2)
+    semantic_results = semantic_search(query, limit=limit * 2)
 
-    merged = merge_results(semantic_results, keyword_results)
+    merged = merge_results(keyword_results, semantic_results)
 
     if refinement_text:
         merged = apply_refinement_boost(merged, refinement_text)
@@ -52,18 +56,41 @@ def retrieve_assessments(query: str, limit: int = 10, refinement_text: str = "")
     return merged[:limit]
 
 
-def semantic_search(query: str, limit: int = 10) -> list[dict[str, Any]]:
-    index = load_vector_index()
-    metadata = load_vector_metadata()
+def keyword_search(query: str, limit: int = 20) -> list[dict[str, Any]]:
+    query_words = set(query.lower().split())
+    scored = []
+
+    for item in load_catalog():
+        search_text = item.get("search_text", "").lower()
+        name = item.get("name", "").lower()
+
+        score = 0
+
+        for word in query_words:
+            if word in name:
+                score += 4
+            elif word in search_text:
+                score += 1
+
+        if score > 0:
+            scored.append((score, item))
+
+    scored.sort(key=lambda pair: pair[0], reverse=True)
+    return [item for _, item in scored[:limit]]
+
+
+def semantic_search(query: str, limit: int = 20) -> list[dict[str, Any]]:
+    index = load_faiss_index()
+    metadata = load_metadata()
 
     if index is None or not metadata:
         return []
 
     model = get_embedding_model()
-    query_embedding = model.encode([query], normalize_embeddings=True)
-    query_embedding = np.array(query_embedding).astype("float32")
+    query_vector = model.encode([query], normalize_embeddings=True)
+    query_vector = np.asarray(query_vector, dtype="float32")
 
-    scores, indices = index.search(query_embedding, limit)
+    _, indices = index.search(query_vector, limit)
 
     results = []
     for idx in indices[0]:
@@ -73,71 +100,45 @@ def semantic_search(query: str, limit: int = 10) -> list[dict[str, Any]]:
     return results
 
 
-def keyword_search(query: str, limit: int = 10) -> list[dict[str, Any]]:
-    query_words = set(query.lower().split())
-    catalog = load_catalog()
-
-    scored = []
-
-    for item in catalog:
-        search_text = item.get("search_text", "").lower()
-        name = item.get("name", "").lower()
-
-        score = 0
-
-        for word in query_words:
-            if word in search_text:
-                score += 1
-            if word in name:
-                score += 3
-
-        if score > 0:
-            scored.append((score, item))
-
-    scored.sort(key=lambda x: x[0], reverse=True)
-
-    return [item for _, item in scored[:limit]]
-
-
 def merge_results(
-    semantic_results: list[dict[str, Any]],
     keyword_results: list[dict[str, Any]],
+    semantic_results: list[dict[str, Any]],
 ) -> list[dict[str, Any]]:
-    seen = set()
     merged = []
+    seen_urls = set()
 
+    # keyword first because exact skill/catalog-name matching is very important
     for item in keyword_results + semantic_results:
         url = item.get("url")
-        if url and url not in seen:
-            seen.add(url)
-            merged.append(item)
+        if not url or url in seen_urls:
+            continue
+
+        seen_urls.add(url)
+        merged.append(item)
 
     return merged
 
+
 def apply_refinement_boost(
-    items: list[dict],
+    items: list[dict[str, Any]],
     refinement_text: str,
-) -> list[dict]:
+) -> list[dict[str, Any]]:
     text = refinement_text.lower()
 
-    def score(item: dict) -> int:
+    def score(item: dict[str, Any]) -> int:
         item_text = item.get("search_text", "").lower()
-        item_keys = " ".join(item.get("keys", [])).lower()
+        test_type = item.get("test_type", "")
 
         boost = 0
 
-        if "personality" in text and (
-            "personality" in item_text or "personality" in item_keys or item.get("test_type") == "P"
-        ):
+        if "personality" in text and test_type == "P":
             boost += 10
 
-        if "cognitive" in text or "ability" in text:
-            if "ability" in item_text or "aptitude" in item_text or item.get("test_type") == "A":
-                boost += 10
+        if ("cognitive" in text or "ability" in text) and test_type == "A":
+            boost += 10
 
-        if "communication" in text or "stakeholder" in text:
-            if "communication" in item_text or "competencies" in item_keys:
-                boost += 7
+        if "communication" in text and "communication" in item_text:
+            boost += 7
 
         return boost
 
