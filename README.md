@@ -1,4 +1,16 @@
 ```rust
+---
+title: SHL Assessment Recommender
+emoji: 🧠
+colorFrom: blue
+colorTo: green
+sdk: docker
+app_port: 7860
+pinned: false
+---
+```
+
+```rust
 # SHL Conversational Assessment Recommender
 
 A FastAPI-based conversational AI assistant that recommends the most suitable **SHL Individual Test Solutions** through natural language conversations. The system understands hiring requirements, asks clarification questions when needed, and returns grounded recommendations using the official SHL product catalog.
