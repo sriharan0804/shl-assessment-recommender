@@ -50,3 +50,22 @@ def test_remote_short_assessment_recommendations():
     assert len(data["recommendations"]) > 0
     assert len(data["recommendations"]) <= 10
     assert data["end_of_conversation"] is True
+
+def test_language_preference_recommendations():
+    response = client.post(
+        "/chat",
+        json={
+            "messages": [
+                {
+                    "role": "user",
+                    "content": "Hiring a mid-level Java developer and need an English assessment",
+                }
+            ]
+        },
+    )
+
+    data = response.json()
+
+    assert response.status_code == 200
+    assert len(data["recommendations"]) > 0
+    assert data["end_of_conversation"] is True

@@ -56,6 +56,21 @@ def rank_assessments(items: list[dict], query: str) -> list[dict]:
             if any(minute in duration for minute in ["10", "15", "20", "25", "30"]):
                 s += 4
 
+        # language preference
+        languages = " ".join(item.get("languages", [])).lower()
+
+        if "english" in query:
+            if "english" in languages:
+                s += 3
+
+        if "spanish" in query:
+            if "spanish" in languages:
+                s += 3
+
+        if "french" in query:
+            if "french" in languages:
+                s += 3
+
         return s
 
     return sorted(items, key=score, reverse=True)
