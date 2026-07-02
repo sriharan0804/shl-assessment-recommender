@@ -1,5 +1,9 @@
+import re
+from app.core.query_context import extract_query_context
+
 def rank_assessments(items: list[dict], query: str) -> list[dict]:
     query = query.lower()
+    context = extract_query_context(query)
 
     def score(item: dict) -> int:
         text = item.get("search_text", "").lower()
@@ -89,6 +93,34 @@ def rank_assessments(items: list[dict], query: str) -> list[dict]:
         if any(w in query for w in ["manager", "lead", "leadership"]):
             if "manager" in job_levels or "supervisor" in job_levels:
                 s += 4
+
+        if context.remote and item.get("remote", "").lower() == "yes":
+            s += 4
+
+        if context.adaptive and item.get("adaptive", "").lower() == "yes":
+            s += 4
+
+        if context.language:
+            languages = " ".join(item.get("languages", [])).lower()
+            if context.language in languages:
+                s += 3
+
+        if context.seniority:
+            job_levels = " ".join(item.get("job_levels", [])).lower()
+            if context.seniority in job_levels:
+                s += 4
+
+        if context.max_duration:
+            duration_text = item.get("duration", "").lower()
+            nums = re.findall(r"\d+", duration_text)
+            if nums and int(nums[0]) <= context.max_duration:
+                s += 4
+
+        if context.wants_personality and test_type == "P":
+            s += 6
+
+        if context.wants_ability and test_type == "A":
+            s += 6
 
         return s
 
